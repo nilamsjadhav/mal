@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec node $(dirname $0)/${STEP:-step0_repl}.js "${@}"
