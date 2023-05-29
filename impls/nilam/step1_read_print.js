@@ -17,7 +17,11 @@ const rep = (arg) => (PRINT(EVAL(READ(arg))));
 
 const repl = () =>
   rl.question('user> ', line => {
-    console.log(rep(line));
+    try {
+      console.log(rep(line))
+    } catch (error) {
+      console.log(error);
+    }
     repl();
   });
 

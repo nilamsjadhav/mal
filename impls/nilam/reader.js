@@ -1,3 +1,5 @@
+const { MalValue, MalSymbol, MalList, MalVector, MalNil, MalBoolen, MalHashMap } = require("./types");
+
 class Reader {
   constructor(tokens) {
     this.tokens = tokens;
@@ -18,28 +20,56 @@ class Reader {
 const tokenize = (str) => {
   const reg_exp = /[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)/g;
 
-  return [...str.matchAll(reg_exp)].map(char => char[1]);
+  return [...str.matchAll(reg_exp)].map(char => char[1]).slice(0, -1);
 };
 
 const read_atom = reader => {
   const token = reader.next();
   const reg = /^-?[0-9]+$/;
+
   if (token.match(reg)) {
     return parseInt(token);
   }
+  if (token === 'true') {
+    return new MalBoolen(true);
+  }
+  if (token === 'false') {
+    return new MalBoolen(false);
+  }
+  if (token === 'nil') {
+    return new MalNil(undefined);
+  }
+  return new MalSymbol(token);
+};
 
-  return token;
+const read_seq = (reader, closingSymbol) => {
+  const ast = [];
+
+  reader.next();
+  while (reader.peek() !== closingSymbol) {
+    if (reader.peek() === undefined) {
+      throw 'unbalanced';
+    }
+    ast.push(read_form(reader));
+  }
+  reader.next();
+  return ast;
+
 };
 
 const read_list = reader => {
-  const ast = [];
+  const ast = read_seq(reader, ')')
+  return new MalList(ast);
+};
 
-  while (reader.peek() != ')') {
-    ast.push(read_form(reader));
-  }
+const read_vector = reader => {
+  const ast = read_seq(reader, ']')
+  return new MalVector(ast);
+};
 
-  reader.next();
-  return ast;
+const read_hashMap = reader => {
+  const ast = read_seq(reader, '}')
+  return new MalHashMap(ast);
 };
 
 const read_form = reader => {
@@ -47,8 +77,11 @@ const read_form = reader => {
 
   switch (token[0]) {
     case '(':
-      reader.next();
       return read_list(reader);
+    case '[':
+      return read_vector(reader);
+    case '{':
+      return read_hashMap(reader);
     default:
       return read_atom(reader);
   }
