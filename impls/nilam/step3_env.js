@@ -1,7 +1,8 @@
 const readline = require("readline");
 const { read_str } = require("./reader");
 const { pr_str } = require("./printer");
-const { MalSymbol, MalList, MalValue, MalVector, MalHashMap } = require("./types");
+const { Env } = require("./env")
+const { MalSymbol, MalList, MalValue, MalVector, MalHashMap, MalNil } = require("./types");
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -10,7 +11,7 @@ const rl = readline.createInterface({
 
 const READ = (arg) => read_str(arg);
 
-const env = {
+const _env = {
   '+': (...args) => args.reduce(((a, b) => a + b)),
   '*': (...args) => args.reduce(((a, b) => a * b)),
   '-': (...args) => args.reduce(((a, b) => a - b)),
@@ -19,7 +20,7 @@ const env = {
 
 const eval_ast = (ast, env) => {
   if (ast instanceof MalSymbol) {
-    return env[ast.value] ? env[ast.value] : ast.value;
+    return env.get(ast) ? env.get(ast) : ast.value;
   }
   if (ast instanceof MalList) {
     const newAst = ast.value.map(x => EVAL(x, env))
@@ -30,7 +31,6 @@ const eval_ast = (ast, env) => {
     return new MalVector(newAst)
   }
   if (ast instanceof MalHashMap) {
-    console.log(ast.value);
     const newAst = ast.value.map((x) => EVAL(x, env))
     return new MalHashMap(newAst)
   }
@@ -47,11 +47,32 @@ const EVAL = (ast, env) => {
     return ast;
   }
 
+  switch (ast.value[0].value) {
+    case 'def!':
+      env.set(ast.value[1], EVAL(ast.value[2], env));
+      return env.get(ast.value[1]);
+    case 'let*':
+      const newEnv = new Env(env);
+      const newAst = ast.value[1];
+
+      for (let index = 0; index < newAst.value.length; index += 2) {
+        newEnv.set(newAst.value[index], EVAL(newAst.value[index + 1], newEnv));
+      }
+
+      return EVAL(ast.value[2], newEnv);
+  }
+
   const [fn, ...args] = eval_ast(ast, env).value;
-  return fn.apply(null, args)
+  return fn.apply(null, args);
 };
 
 const PRINT = arg => pr_str(arg);
+
+const env = new Env();
+env.set(new MalSymbol('+'), (...args) => args.reduce(((a, b) => a + b)));
+env.set(new MalSymbol('*'), (...args) => args.reduce(((a, b) => a * b)));
+env.set(new MalSymbol('-'), (...args) => args.reduce(((a, b) => a - b)));
+env.set(new MalSymbol('/'), (...args) => args.reduce(((a, b) => a / b)));
 
 const rep = arg => (PRINT(EVAL(READ(arg), env)));
 
