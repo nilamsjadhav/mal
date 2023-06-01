@@ -48,7 +48,7 @@ const defBlock = (ast, env) => {
 };
 
 const isFalse = result => {
-  return result.value == false || result.value == 'false' || result.value === null;
+  return result.value === false || result.value === 'false' || result.value === null;
 }
 
 const ifBlock = (ast, env) => {
@@ -93,12 +93,11 @@ const EVAL = (ast, env) => {
     case 'empty?':
       return ast.value[1].value.length == 0;
     case 'fn*':
-      const [, args, fnBody, ...values] = ast.value;
-      const newEnv = new Env(env, args.value);
-      console.log('ast', ast);
-      console.log(args);
-      console.log(values);
-      return EVAL(fnBody, newEnv);
+      const [, params, fnBody] = ast.value;
+      return (...args) => {
+        const newEnv = new Env(env, params.value, args);
+        return EVAL(fnBody, newEnv);
+      }
   }
 
   const [fn, ...args] = eval_ast(ast, env).value;

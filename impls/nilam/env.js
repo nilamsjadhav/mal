@@ -1,8 +1,12 @@
 class Env {
   #outer
-  constructor(outer) {
+  constructor(outer, binds = [], expr = []) {
     this.#outer = outer;
     this.data = {};
+
+    for (let index = 0; index < binds.length; index++) {
+      this.data[binds[index].value] = expr[index];
+    }
   }
 
   set(symbol, malValue) {
