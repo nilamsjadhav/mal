@@ -1,8 +1,9 @@
 const readline = require("readline");
 const { read_str } = require("./reader");
 const { pr_str } = require("./printer");
-const { Env } = require("./env")
-const { MalSymbol, MalList, MalValue, MalVector, MalHashMap, MalNil, MalBoolen } = require("./types");
+const { MalSymbol, MalList, MalVector, MalHashMap, MalNil } = require("./types");
+const { createEnv } = require("./core.js");
+const { Env } = require("./env");
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -66,6 +67,26 @@ const doBlock = (ast, env) => {
   return newAst.map(ele => EVAL(ele, env)).slice(-1);
 }
 
+const fnBlock = (ast, env) => {
+  const [, params, fnBody] = ast.value;
+  return (...args) => {
+    const newEnv = new Env(env, params.value, args);
+    return EVAL(fnBody, newEnv);
+  };
+}
+
+const countBlock = (ast, env) => {
+  if (ast.value[1] instanceof MalList) {
+    return EVAL(ast.value[1], env).value.length;
+  }
+  if (ast.value[1] instanceof MalNil) {
+    console.log(ast.value[1]);
+    return 0;
+  }
+  const value = ast.value.slice(1);
+  return value[0] ? value.length : 0;
+};
+
 const EVAL = (ast, env) => {
   if (!(ast instanceof MalList)) {
     return eval_ast(ast, env);
@@ -85,7 +106,7 @@ const EVAL = (ast, env) => {
     case 'if':
       return ifBlock(ast, env);
     case 'count':
-      return ast.value[1].value.length;
+      return countBlock(ast, env);
     case 'list':
       return new MalList(ast.value.slice(1));
     case 'list?':
@@ -93,30 +114,12 @@ const EVAL = (ast, env) => {
     case 'empty?':
       return ast.value[1].value.length == 0;
     case 'fn*':
-      const [, params, fnBody] = ast.value;
-      return (...args) => {
-        const newEnv = new Env(env, params.value, args);
-        return EVAL(fnBody, newEnv);
-      }
+      return fnBlock(ast, env);
   }
 
   const [fn, ...args] = eval_ast(ast, env).value;
   return fn.apply(null, args);
 };
-
-const createEnv = () => {
-  const env = new Env();
-  env.set(new MalSymbol('+'), (...args) => args.reduce(((a, b) => a + b)));
-  env.set(new MalSymbol('*'), (...args) => args.reduce(((a, b) => a * b)));
-  env.set(new MalSymbol('-'), (...args) => args.reduce(((a, b) => a - b)));
-  env.set(new MalSymbol('/'), (...args) => args.reduce(((a, b) => a / b)));
-  env.set(new MalSymbol('='), (a, b) => new MalBoolen(a == b));
-  env.set(new MalSymbol('>'), (a, b) => new MalBoolen(a > b));
-  env.set(new MalSymbol('<'), (a, b) => new MalBoolen(a < b));
-  env.set(new MalSymbol('>='), (a, b) => new MalBoolen(a >= b));
-  env.set(new MalSymbol('<='), (a, b) => new MalBoolen(a <= b));
-  return env;
-}
 
 const PRINT = arg => pr_str(arg);
 

@@ -81,6 +81,10 @@ class MalNil extends MalValue {
   pr_str() {
     return 'nil';
   }
+
+  equal(newNil) {
+    return this.value === newNil.value;
+  }
 }
 
 class MalBoolen extends MalValue {
@@ -91,13 +95,24 @@ class MalBoolen extends MalValue {
   pr_str() {
     return this.value.toString();
   }
+
+  equal(newBool) {
+    return this.value === newBool.value;
+  }
 }
 
-module.exports = { MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap };
+class MalKeyword extends MalValue {
+  constructor(value) {
+    super(value);
+  }
 
+  pr_str() {
+    return this.value.toString();
+  }
 
-// [1, 2, 3, 4].map((ele, index, list) => {
-//   if (index % 2 == 0) {
-//     return [ele, list[index + 1] + ','].join(' ')
-//   }
-// }).filter(x => x).join(' ').slice(0, -1).trim()
+  equal(newKeyword) {
+    return this.value === newKeyword.value;
+  }
+}
+
+module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap };
