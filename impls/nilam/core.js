@@ -1,5 +1,7 @@
 const { Env } = require("./env");
-const { MalSymbol, MalBoolen, MalNil } = require("./types");
+const { MalSymbol, MalBoolen, MalNil, MalKeyword, MalList } = require("./types");
+
+const equalTo = (args) => args.reduce(((a, b) => a === b));
 
 const equal = (...args) => {
   const [firstEle,] = args
@@ -8,45 +10,86 @@ const equal = (...args) => {
       return ele instanceof MalNil;
     })
   }
+
   if (firstEle instanceof MalBoolen) {
-    return args.every((ele) => {
-      return ele instanceof MalBoolen;
-    })
+    const result = args.every((first, index, list) => {
+      return !list[index + 1] ? true : first.value === list[index + 1].value;
+    });
+    return result;
   }
 
-  return args.reduce(((a, b) => a === b));
+  if (firstEle instanceof MalKeyword) {
+    return args.reduce((first, second) => first.equal(second));
+  }
+
+  return equalTo(args);
 }
 
-const greaterThan = (...args) => {
+const greaterThan = (first, second) => first > second;
+const lessThan = (first, second) => first < second;
+const lessThanEquals = (first, second) => first <= second;
+const greaterThanEquals = (first, second) => first >= second;
+
+const compare = (args, operator) => {
+  const operatorMap = {
+    '>': greaterThan,
+    '<': lessThan,
+    '>=': greaterThanEquals,
+    '<=': lessThanEquals
+  }
+  const func = operatorMap[operator];
+
   const result = args.every((first, index, list) => {
-    return !list[index + 1] ? true : first > list[index + 1]
+    return !list[index + 1] ? true : func(first, list[index + 1]);
   });
 
   return new MalBoolen(result);
+}
+
+const countBlock = (ast, env) => {
+  if (ast[0] instanceof MalList) {
+    return EVAL(ast[1], env).length;
+  }
+  if (ast[0] instanceof MalNil) {
+    return 0;
+  }
+  const value = ast.slice(1);
+  return value[0] ? value.length : 0;
 };
 
-const lessThan = (...args) => {
-  const result = args.every((first, index, list) => {
-    return !list[index + 1] ? true : first < list[index + 1]
-  });
-
-  return new MalBoolen(result);
+const empty = (args) => {
+  return args.value.length === 0;
 };
 
-const lessThanEquals = (...args) => {
-  const result = args.every((first, index, list) => {
-    return !list[index + 1] ? true : first <= list[index + 1]
-  });
-
-  return result;
+const str = (args) => {
+  // console.log(args);
+  if (Array.isArray(args)) {
+    // return args.join('');
+    console.log(args.value);
+    return args.map(a => a.value).join('');
+  }
+  return args ? args.toString() : '\"\"';
 };
 
-const greaterThanEquals = (...args) => {
-  const result = args.every((first, index, list) => {
-    return !list[index + 1] ? true : first >= list[index + 1]
+const prnBlock = (...args) => {
+  args.map(ele => {
+    let value = '';
+    if (ele.value) {
+      value = ele.value;
+    }
+    return value;
   });
 
-  return new MalBoolen(result);
+  console.log(args.join(' '));
+  return 'nil';
+};
+
+const not = args => {
+  console.log(!args, args);
+  if (typeof args === 'number') {
+    return false;
+  }
+  return !args.value;
 };
 
 const createEnv = () => {
@@ -55,12 +98,21 @@ const createEnv = () => {
   env.set(new MalSymbol('*'), (...args) => args.reduce(((a, b) => a * b)));
   env.set(new MalSymbol('-'), (...args) => args.reduce(((a, b) => a - b)));
   env.set(new MalSymbol('/'), (...args) => args.reduce(((a, b) => a / b)));
-  env.set(new MalSymbol('='), equal);
-  env.set(new MalSymbol('>'), greaterThan);
-  env.set(new MalSymbol('<'), lessThan);
-  env.set(new MalSymbol('>='), greaterThanEquals);
-  env.set(new MalSymbol('<='), lessThanEquals);
+  env.set(new MalSymbol('='), (...args) => equal(...args));
+  env.set(new MalSymbol('>'), (...args) => compare(args, '>'));
+  env.set(new MalSymbol('<'), (...args) => compare(args, '<'));
+  env.set(new MalSymbol('>='), (...args) => compare(args, '>='));
+  env.set(new MalSymbol('<='), (...args) => compare(args, '<='));
+  env.set(new MalSymbol('<='), (...args) => compare(args, '<='));
+  env.set(new MalSymbol('count'), (...args) => countBlock(args, env));
+  env.set(new MalSymbol('list'), (...args) => new MalList(args));
+  env.set(new MalSymbol('list?'), (...args) => args.slice(1) instanceof MalList);
+  env.set(new MalSymbol('empty?'), empty);
+  env.set(new MalSymbol('not'), not);
+  env.set(new MalSymbol('str'), (...args) => str(args));
+  env.set(new MalSymbol('prn'), prnBlock);
   return env;
 }
+
 
 module.exports = { createEnv };
