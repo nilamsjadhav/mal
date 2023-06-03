@@ -72,7 +72,6 @@ class MalHashMap extends MalValue {
   }
 
   pr_str() {
-    console.log(this.value);
     const mapOfKeyValue = zipmap(this.value)
 
     return '{' + mapOfKeyValue.map(([key, value]) => {
@@ -135,14 +134,15 @@ class MalString extends MalValue {
 }
 
 class MalFunction extends MalValue {
-  constructor(ast, env) {
-    super(value);
+  constructor(ast, binds, env) {
+    super(ast);
+    this.binds = binds;
+    this.oldEnv = env;
   }
-
-  toString() {
-    return this.value;
+  pr_str() {
+    return '#<function>'
   }
 
 }
 
-module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap, MalString };
+module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap, MalString, MalFunction };

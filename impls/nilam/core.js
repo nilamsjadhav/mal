@@ -1,29 +1,26 @@
 const { Env } = require("./env");
 const { MalSymbol, MalBoolen, MalNil, MalKeyword, MalList } = require("./types");
 
-const equalTo = (args) => args.reduce(((a, b) => a === b));
+const areBothArrays = function (array1, array2) {
+  return Array.isArray(array1) && Array.isArray(array2);
+};
 
-const equal = (...args) => {
-  const [firstEle,] = args
-  if (firstEle instanceof MalNil) {
-    return args.every((ele) => {
-      return ele instanceof MalNil;
-    })
+const deepEqual = function (list1, list2) {
+  if (!areBothArrays(list1.value, list2.value)) {
+    return list1 === list2;
   }
 
-  if (firstEle instanceof MalBoolen) {
-    const result = args.every((first, index, list) => {
-      return !list[index + 1] ? true : first.value === list[index + 1].value;
-    });
-    return result;
+  if (list1.value.length !== list2.value.length) {
+    return false;
   }
 
-  if (firstEle instanceof MalKeyword) {
-    return args.reduce((first, second) => first.equal(second));
+  for (let index = 0; index < list1.value.length; index++) {
+    if (!deepEqual(list1.value[index], list2.value[index])) {
+      return false;
+    }
   }
-
-  return equalTo(args);
-}
+  return true;
+};
 
 const greaterThan = (first, second) => first > second;
 const lessThan = (first, second) => first < second;
@@ -62,9 +59,7 @@ const empty = (args) => {
 };
 
 const str = (args) => {
-  // console.log(args);
   if (Array.isArray(args)) {
-    // return args.join('');
     console.log(args.value);
     return args.map(a => a.value).join('');
   }
@@ -85,7 +80,6 @@ const prnBlock = (...args) => {
 };
 
 const not = args => {
-  console.log(!args, args);
   if (typeof args === 'number') {
     return false;
   }
@@ -98,7 +92,7 @@ const createEnv = () => {
   env.set(new MalSymbol('*'), (...args) => args.reduce(((a, b) => a * b)));
   env.set(new MalSymbol('-'), (...args) => args.reduce(((a, b) => a - b)));
   env.set(new MalSymbol('/'), (...args) => args.reduce(((a, b) => a / b)));
-  env.set(new MalSymbol('='), (...args) => equal(...args));
+  env.set(new MalSymbol('='), (a, b) => deepEqual(a, b));
   env.set(new MalSymbol('>'), (...args) => compare(args, '>'));
   env.set(new MalSymbol('<'), (...args) => compare(args, '<'));
   env.set(new MalSymbol('>='), (...args) => compare(args, '>='));
@@ -113,6 +107,5 @@ const createEnv = () => {
   env.set(new MalSymbol('prn'), prnBlock);
   return env;
 }
-
 
 module.exports = { createEnv };

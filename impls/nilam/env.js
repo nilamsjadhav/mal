@@ -1,12 +1,18 @@
 class Env {
   #outer
-  constructor(outer) {
+  constructor(outer, binds = [], expr = []) {
     this.#outer = outer;
     this.data = {};
+    this.#bindValues(binds, expr);
+  }
+
+  #bindValues(binds, expr) {
+    for (let index = 0; index < binds.length; index++) {
+      this.set(binds[index], expr[index]);
+    }
   }
 
   set(symbol, malValue) {
-    // console.log("set env", symbol.value, malValue)
     this.data[symbol.value] = malValue;
   }
 
@@ -21,10 +27,7 @@ class Env {
 
   get(symbol) {
     const env = this.find(symbol);
-    // console.log("get env", symbol);
-    // console.log("get env", env);
     if (!env) throw `${symbol.value} not found`;
-    // console.log("get env", env.data[symbol.value]);
     return env.data[symbol.value];
   }
 }

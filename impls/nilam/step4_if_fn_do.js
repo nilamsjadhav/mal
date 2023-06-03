@@ -51,8 +51,7 @@ const defBlock = (ast, env) => {
 };
 
 const isFalse = (result) => {
-  const a = result.value === false || result.value === 'false' || result.value === null;
-  return a;
+  return result.value === false || result.value === 'false' || result.value === null;
 }
 
 const ifBlock = (ast, env) => {
