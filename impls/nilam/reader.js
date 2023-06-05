@@ -1,4 +1,4 @@
-const { MalSymbol, MalList, MalVector, MalNil, MalBoolen, MalHashMap, MalKeyword, MalString } = require("./types");
+const { MalSymbol, MalList, MalVector, MalNil, MalBoolen, MalHashMap, MalKeyword, createMalString } = require("./types");
 
 class Reader {
   constructor(tokens) {
@@ -43,7 +43,7 @@ const read_atom = reader => {
     return new MalKeyword(token)
   }
   if (token.startsWith('"')) {
-    return new MalString(token)
+    return createMalString(token.slice(1, -1));
   }
   return new MalSymbol(token);
 };
@@ -78,6 +78,13 @@ const read_hashMap = reader => {
   return new MalHashMap(ast);
 };
 
+const prependSymbol = (reader, symbolStr) => {
+  reader.next();
+  const newAst = read_form(reader);
+  const symbol = new MalSymbol(symbolStr);
+  return new MalList(newAst, symbol);
+};
+
 const read_form = reader => {
   const token = reader.peek();
 
@@ -88,6 +95,11 @@ const read_form = reader => {
       return read_vector(reader);
     case '{':
       return read_hashMap(reader);
+    case ';':
+      reader.next()
+      return new MalNil();
+    case '@':
+      return prependSymbol(reader, 'deref');
     default:
       return read_atom(reader);
   }

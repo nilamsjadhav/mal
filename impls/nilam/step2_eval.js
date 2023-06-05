@@ -30,7 +30,6 @@ const eval_ast = (ast, env) => {
     return new MalVector(newAst)
   }
   if (ast instanceof MalHashMap) {
-    console.log(ast.value);
     const newAst = ast.value.map((x) => EVAL(x, env))
     return new MalHashMap(newAst)
   }

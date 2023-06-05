@@ -1,7 +1,9 @@
 const pr_str = malValue => {
   if (malValue instanceof MalValue) {
-    return malValue.pr_str();
+    // console.log(malValue, 'in pr_str');
+    return malValue.pr_str(true);
   }
+  // console.log(malValue, 'in pr_str');
   return malValue.toString();
 };
 
@@ -131,18 +133,60 @@ class MalString extends MalValue {
     return this.value;
   }
 
+  pr_str(print_readably = false) {
+    if (print_readably) {
+      return '"' + this.value
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n") + '"';
+    }
+    return this.value;
+  }
 }
 
+const createMalString = (str) => {
+  return str.replace(/\\(.)/g, (y, captured) => captured === 'n' ? '\n' : captured)
+};
+
 class MalFunction extends MalValue {
-  constructor(ast, binds, env) {
+  constructor(ast, binds, env, fn) {
     super(ast);
     this.binds = binds;
     this.oldEnv = env;
-  }
-  pr_str() {
-    return '#<function>'
+    this.fn = fn
   }
 
+  pr_str() {
+    return '#<function>';
+  }
+
+  apply(context, args) {
+    return this.fn.apply(context, args);
+  }
 }
 
-module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap, MalString, MalFunction };
+class MalAtom extends MalValue {
+  constructor(value) {
+    super(value);
+  }
+
+  pr_str() {
+    return `(atom ${pr_str(this.value)})`;
+  }
+
+  deref() {
+    return this.value;
+  }
+
+  reset(value) {
+    this.value = value;
+    return this.value;
+  }
+
+  swap(f, args) {
+    this.value = f.apply(null, [this.value, ...args]);
+    return this.value;
+  }
+}
+
+module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap, MalString, MalFunction, createMalString, MalAtom };

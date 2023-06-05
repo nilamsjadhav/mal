@@ -51,12 +51,12 @@ const defBlock = (ast, env) => {
 };
 
 const isFalse = (result) => {
-  return result.value === false || result.value === 'false' || result.value === null;
+  return result.value === false || result.value === 'false' || result instanceof MalNil || result === false;
 }
 
 const ifBlock = (ast, env) => {
   const [_, pred, trueBlock, falseBlock] = ast.value;
-  const result = new MalBoolen(EVAL(pred, env));
+  const result = EVAL(pred, env);
 
   if (isFalse(result)) {
     return falseBlock !== undefined ? EVAL(falseBlock, env) : new MalNil();
@@ -70,7 +70,6 @@ const doBlock = (ast, env) => {
 }
 
 const fnBlock = (ast, env) => {
-  console.log(ast);
   const [_, params, fnBody] = ast.value;
   return (...args) => {
     const newEnv = new Env(env);
