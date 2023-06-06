@@ -133,7 +133,7 @@ const ns = {
   '<': (...args) => compare(args, '<'),
   'count': (...args) => countBlock(args),
   'list': (...args) => new MalList(args),
-  'list?': (...args) => args.slice(1) instanceof MalList,
+  'list?': (args) => args instanceof MalList,
   'empty?': empty,
   'not': not,
   'str': (...args) => str(args),

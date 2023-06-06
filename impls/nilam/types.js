@@ -1,9 +1,7 @@
-const pr_str = malValue => {
+const pr_str = (malValue) => {
   if (malValue instanceof MalValue) {
-    // console.log(malValue, 'in pr_str');
     return malValue.pr_str(true);
   }
-  // console.log(malValue, 'in pr_str');
   return malValue.toString();
 };
 
@@ -145,7 +143,7 @@ class MalString extends MalValue {
 }
 
 const createMalString = (str) => {
-  return str.replace(/\\(.)/g, (y, captured) => captured === 'n' ? '\n' : captured)
+  return str.replace(/\\(.)/g, (y, captured) => captured === "n" ? "\n" : captured)
 };
 
 class MalFunction extends MalValue {
@@ -171,7 +169,8 @@ class MalAtom extends MalValue {
   }
 
   pr_str() {
-    return `(atom ${pr_str(this.value)})`;
+    return `(atom ${pr_str(this.value)
+      })`;
   }
 
   deref() {

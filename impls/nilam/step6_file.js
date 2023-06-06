@@ -125,13 +125,14 @@ const env = createEnv();
 
 const createReplEnv = () => {
   env.set(new MalSymbol('eval'), ast => EVAL(ast, env))
+  env.set(new MalSymbol('*ARGV*'), new MalList(process.argv.slice(2)));
 }
 
 createReplEnv();
 
 const rep = arg => (PRINT(EVAL(READ(arg), env)));
 
-rep('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))')
+rep('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))');
 
 const repl = () =>
   rl.question('user> ', line => {
@@ -143,9 +144,13 @@ const repl = () =>
     repl();
   });
 
-if (process.argv.length >= 3) {
-  rep('(load-file "' + process.argv[2] + '")');
-  rl.close();
-} else {
-  repl();
-}
+const main = () => {
+  if (process.argv.length >= 3) {
+    rep('(load-file "' + process.argv[2] + '")');
+    rl.close();
+  } else {
+    repl();
+  }
+};
+
+main();
