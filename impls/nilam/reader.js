@@ -100,6 +100,14 @@ const read_form = reader => {
       return new MalNil();
     case '@':
       return prependSymbol(reader, 'deref');
+    case "'":
+      return prependSymbol(reader, 'quote');
+    case "`":
+      return prependSymbol(reader, 'quasiquote');
+    case "~":
+      return prependSymbol(reader, 'unquote');
+    case "~@":
+      return prependSymbol(reader, 'splice-unquote');
     default:
       return read_atom(reader);
   }

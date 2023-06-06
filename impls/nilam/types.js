@@ -22,13 +22,19 @@ class MalSymbol extends MalValue {
   }
 }
 
-class MalList extends MalValue {
+class MalSequence extends MalValue {
+  constructor(value) {
+    super(value)
+  }
+}
+
+class MalList extends MalSequence {
   constructor(value) {
     super(value);
   }
 
-  pr_str() {
-    return '(' + this.value.map(pr_str).join(' ') + ')';
+  pr_str(print_readably = false) {
+    return '(' + this.value.map(x => pr_str(x, true)).join(' ') + ')';
   }
 
   toString() {
@@ -38,15 +44,19 @@ class MalList extends MalValue {
   isEmpty() {
     return this.value.length == 0;
   }
+
+  beginsWith(str) {
+    return this.value.length > 0 && this.value[0].value === str;
+  }
 }
 
-class MalVector extends MalValue {
+class MalVector extends MalSequence {
   constructor(value) {
     super(value);
   }
 
-  pr_str() {
-    return '[' + this.value.map(pr_str).join(' ') + ']';
+  pr_str(print_readably = false) {
+    return '[' + this.value.map(x => pr_str(x, print_readably)).join(' ') + ']';
   }
 
   toString() {
@@ -127,11 +137,12 @@ class MalString extends MalValue {
     super(value);
   }
 
-  toString() {
-    return this.value;
-  }
+  // toString() {
+  //   return this.value;
+  // }
 
   pr_str(print_readably = false) {
+    console.log("in pr_str", print_readably);
     if (print_readably) {
       return '"' + this.value
         .replace(/\\/g, "\\\\")
@@ -188,4 +199,4 @@ class MalAtom extends MalValue {
   }
 }
 
-module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap, MalString, MalFunction, createMalString, MalAtom };
+module.exports = { MalKeyword, MalSymbol, MalValue, MalList, MalVector, MalNil, MalBoolen, pr_str, MalHashMap, MalString, MalFunction, createMalString, MalAtom, MalSequence };
