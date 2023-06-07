@@ -1,6 +1,6 @@
-const pr_str = (malValue) => {
+const pr_str = (malValue, print_readably = false) => {
   if (malValue instanceof MalValue) {
-    return malValue.pr_str(true);
+    return malValue.pr_str(print_readably);
   }
   return malValue.toString();
 };
@@ -81,12 +81,12 @@ class MalHashMap extends MalValue {
     super(value);
   }
 
-  pr_str() {
+  pr_str(print_readably = false) {
     const mapOfKeyValue = zipmap(this.value)
+    const keyValMapping = mapOfKeyValue.map(([key, value]) =>
+      [pr_str(key, true), value + ','].join(' '));
 
-    return '{' + mapOfKeyValue.map(([key, value]) => {
-      return [key, value + ','].join(' ');
-    }).join(' ').slice(0, -1).trim() + '}'
+    return '{' + keyValMapping.join(' ').slice(0, -1).trim() + '}'
   }
 }
 
@@ -123,7 +123,7 @@ class MalKeyword extends MalValue {
     super(value);
   }
 
-  pr_str() {
+  pr_str(print_readably = false) {
     return this.value.toString();
   }
 
@@ -137,24 +137,22 @@ class MalString extends MalValue {
     super(value);
   }
 
-  // toString() {
-  //   return this.value;
-  // }
-
   pr_str(print_readably = false) {
-    console.log("in pr_str", print_readably);
     if (print_readably) {
-      return '"' + this.value
+      const value = '"' + this.value
         .replace(/\\/g, "\\\\")
         .replace(/"/g, '\\"')
         .replace(/\n/g, "\\n") + '"';
+      return value;
     }
-    return this.value;
+
+    return this.value.toString();
   }
 }
 
 const createMalString = (str) => {
-  return str.replace(/\\(.)/g, (y, captured) => captured === "n" ? "\n" : captured)
+  const char = str.replace(/\\(.)/g, (y, captured) => captured === "n" ? "\n" : captured)
+  return new MalString(char);
 };
 
 class MalFunction extends MalValue {
@@ -165,7 +163,7 @@ class MalFunction extends MalValue {
     this.fn = fn
   }
 
-  pr_str() {
+  pr_str(print_readably = false) {
     return '#<function>';
   }
 
@@ -179,7 +177,7 @@ class MalAtom extends MalValue {
     super(value);
   }
 
-  pr_str() {
+  pr_str(print_readably = false) {
     return `(atom ${pr_str(this.value)
       })`;
   }

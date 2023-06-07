@@ -119,20 +119,19 @@ const EVAL = (ast, env) => {
 
 };
 
-const PRINT = arg => pr_str(arg);
+const PRINT = arg => pr_str(arg, true);
 
 const env = createEnv();
+
+const rep = arg => (PRINT(EVAL(READ(arg), env)));
 
 const createReplEnv = () => {
   env.set(new MalSymbol('eval'), ast => EVAL(ast, env))
   env.set(new MalSymbol('*ARGV*'), new MalList(process.argv.slice(2)));
+  rep('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))');
 }
 
 createReplEnv();
-
-const rep = arg => (PRINT(EVAL(READ(arg), env)));
-
-rep('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))');
 
 const repl = () =>
   rl.question('user> ', line => {

@@ -1,7 +1,7 @@
 const readline = require("readline");
 const { read_str } = require("./reader");
 const { pr_str } = require("./printer");
-const { MalSymbol, MalList, MalVector, MalHashMap, MalNil, MalBoolen } = require("./types");
+const { MalSymbol, MalList, MalVector, MalHashMap, MalNil, MalFunction } = require("./types");
 const { createEnv } = require("./core.js");
 const { Env } = require("./env");
 
@@ -14,10 +14,8 @@ const READ = (arg) => read_str(arg);
 
 const eval_ast = (ast, env) => {
   if (ast instanceof MalSymbol) {
-    const symbol = env.get(ast)
-    return symbol !== undefined ? symbol : ast.value;
+    return env.get(ast);
   }
-
   if (ast instanceof MalList) {
     const newAst = ast.value.map(x => EVAL(x, env))
     return new MalList(newAst)
@@ -36,13 +34,14 @@ const eval_ast = (ast, env) => {
 
 const letBlock = (ast, env) => {
   const newEnv = new Env(env);
-  const newAst = ast.value[1];
+  const [, bindings, ...exprs] = ast.value;
+  const forms = new MalList([new MalSymbol('do'), ...exprs]);
 
-  for (let index = 0; index < newAst.value.length; index += 2) {
-    newEnv.set(newAst.value[index], EVAL(newAst.value[index + 1], newEnv));
+  for (let index = 0; index < bindings.value.length; index += 2) {
+    newEnv.set(bindings.value[index], EVAL(bindings.value[index + 1], newEnv));
   }
 
-  return EVAL(ast.value[2], newEnv);
+  return [newEnv, forms];
 };
 
 const defBlock = (ast, env) => {
@@ -50,7 +49,7 @@ const defBlock = (ast, env) => {
   return env.get(ast.value[1]);
 };
 
-const isFalse = (result) => {
+const isFalse = result => {
   return result.value === false || result.value === 'false' || result instanceof MalNil || result === false;
 }
 
@@ -59,70 +58,101 @@ const ifBlock = (ast, env) => {
   const result = EVAL(pred, env);
 
   if (isFalse(result)) {
-    return falseBlock !== undefined ? EVAL(falseBlock, env) : new MalNil();
+    return ast.value[3] !== undefined ? falseBlock : new MalNil();
   }
-  return EVAL(trueBlock, env);
+  return trueBlock;
 };
 
 const doBlock = (ast, env) => {
   const newAst = ast.value.slice(1);
-  return newAst.map(ele => EVAL(ele, env)).slice(-1);
+  newAst.slice(0, -1).forEach(ele => EVAL(ele, env));
+  return newAst[newAst.length - 1];
 }
 
 const fnBlock = (ast, env) => {
-  const [_, params, fnBody] = ast.value;
-  return (...args) => {
-    const newEnv = new Env(env);
+  const [, params, ...fnBody] = ast.value;
+  const doForms = new MalList([new MalSymbol('do'), ...fnBody]);
 
-    for (let index = 0; index < params.value.length; index++) {
-      newEnv.set(params.value[index], args[index]);
-    }
-    return EVAL(fnBody, newEnv);
-  };
+  const fn = (...args) => {
+    const newEnv = new Env(env, params.value, args);
+    return EVAL(ast.value[2], newEnv)
+  }
+  return new MalFunction(doForms, params, env, fn);
 }
 
 const EVAL = (ast, env) => {
-  if (!(ast instanceof MalList)) {
-    return eval_ast(ast, env);
+  while (true) {
+    if (!(ast instanceof MalList)) {
+      return eval_ast(ast, env);
+    }
+
+    if (ast.isEmpty()) {
+      return ast;
+    }
+
+    switch (ast.value[0].value) {
+      case 'def!':
+        return defBlock(ast, env);
+      case 'let*':
+        [env, ast] = letBlock(ast, env);
+        break;
+      case 'do':
+        ast = doBlock(ast, env);
+        break;
+      case 'if':
+        ast = ifBlock(ast, env);
+        break;
+      case 'fn*':
+        ast = fnBlock(ast, env);
+        break;
+      default:
+        const [fn, ...args] = eval_ast(ast, env).value;
+        if (fn instanceof MalFunction) {
+          const newEnv = new Env(fn.oldEnv, fn.binds.value, args);
+          env = newEnv;
+          ast = fn.value;
+        } else {
+          return fn.apply(null, args);
+        }
+    }
   }
 
-  if (ast.isEmpty()) {
-    return ast;
-  }
-
-  switch (ast.value[0].value) {
-    case 'def!':
-      return defBlock(ast, env);
-    case 'let*':
-      return letBlock(ast, env);
-    case 'do':
-      return doBlock(ast, env);
-    case 'if':
-      return ifBlock(ast, env);
-    case 'fn*':
-      return fnBlock(ast, env);
-  }
-
-  const [fn, ...args] = eval_ast(ast, env).value;
-  return fn.apply(null, args);
 };
 
-const PRINT = arg => pr_str(arg);
+const PRINT = arg => pr_str(arg, true);
 
 const env = createEnv();
 
+const createReplEnv = () => {
+  env.set(new MalSymbol('eval'), ast => EVAL(ast, env))
+  env.set(new MalSymbol('*ARGV*'), new MalList(process.argv.slice(2)));
+}
+
+createReplEnv();
+
 const rep = arg => (PRINT(EVAL(READ(arg), env)));
+
+rep("(def! not (fn* [x] (if x false true)))")
+
+rep('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))');
 
 const repl = () =>
   rl.question('user> ', line => {
     try {
       console.log(rep(line));
-    } catch (error) {
-      console.log(error);
+    } catch (e) {
+      console.log(e);
     }
     repl();
   });
 
-repl();
+const main = () => {
+  if (process.argv.length >= 3) {
+    rep('(load-file "' + process.argv[2] + '")');
+    rl.close();
+  } else {
+    repl();
+  }
+};
 
-// (def! fact(fn* [a](if (= a 1) 1(* a(fact(- a 1))))))
+main();

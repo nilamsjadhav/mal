@@ -1,5 +1,5 @@
 const { Env } = require("./env");
-const { MalSymbol, MalBoolen, MalNil, MalList, MalVector, MalKeyword, MalString, MalAtom } = require("./types");
+const { MalSymbol, MalBoolen, MalNil, MalList, MalVector, MalKeyword, MalString, MalAtom, pr_str } = require("./types");
 const { read_str } = require("./reader")
 const fs = require("fs")
 
@@ -85,23 +85,12 @@ const empty = (args) => {
 };
 
 const str = (args) => {
-  if (Array.isArray(args.value)) {
-    console.log(args.value);
-    return args.map(a => a.value).join('');
-  }
-  return args ? args.toString() : '\"\"';
+  return new MalString(args.map(ele => pr_str(ele, false)).join(""));
 };
 
 const prnBlock = (...args) => {
-  args.map(ele => {
-    let value = '';
-    if (ele.value) {
-      value = ele.value;
-    }
-    return value;
-  });
-
-  console.log(args.join(' '));
+  const str = args.map(ele => pr_str(ele, true)).join(" ");
+  console.log(str);
   return 'nil';
 };
 
@@ -113,11 +102,8 @@ const not = args => {
 };
 
 const printlnBlock = (args) => {
-  if (args === undefined) {
-    console.log();
-    return 'nil';
-  }
-  console.log(args.value);
+  const str = args.map(ele => pr_str(ele, false)).join(" ");
+  console.log(str);
   return 'nil';
 };
 
@@ -137,10 +123,11 @@ const ns = {
   'empty?': empty,
   'not': not,
   'str': (...args) => str(args),
+  'pr-str': (...args) => pr_str(new MalString(args.map(x => pr_str(x, true)).join(" ")), true),
   'prn': prnBlock,
-  'println': printlnBlock,
-  'read-string': args => read_str(args),
-  'slurp': filename => new MalString(fs.readFileSync(filename, "utf-8")),
+  'println': (...args) => printlnBlock(args),
+  'read-string': args => read_str(args.value),
+  'slurp': filename => new MalString(fs.readFileSync(filename.value, "utf-8")),
   'atom': args => new MalAtom(args),
   'atom?': args => args instanceof MalAtom,
   'deref': atom => atom.deref(),
