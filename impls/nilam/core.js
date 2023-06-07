@@ -95,6 +95,7 @@ const prnBlock = (...args) => {
 };
 
 const not = args => {
+  console.log(args);
   if (typeof args === 'number') {
     return false;
   }
@@ -135,7 +136,10 @@ const ns = {
   'swap!': (atom, f, ...args) => atom.swap(f, args),
   'cons': (value, list) => new MalList([value, ...list.value]),
   'concat': (...lists) => new MalList(lists.flatMap(x => x.value)),
-  'vec': (list) => new MalVector(list.value)
+  'vec': list => new MalVector(list.value),
+  'nth': (list, n) => list.nth(n),
+  'first': list => list.first(),
+  'rest': list => list instanceof MalNil ? new MalList([]) : list.rest(),
 }
 
 const createEnv = () => {

@@ -26,6 +26,28 @@ class MalSequence extends MalValue {
   constructor(value) {
     super(value)
   }
+
+  isEmpty() {
+    return this.value.length == 0;
+  }
+
+  nth(n) {
+    if (n >= this.value.length) {
+      throw "Index out of range";
+    }
+    return this.value[n];
+  }
+
+  first() {
+    if (this.isEmpty()) {
+      return new MalNil();
+    }
+    return this.nth(0);
+  }
+
+  rest() {
+    return new MalList(this.value.slice(1));
+  }
 }
 
 class MalList extends MalSequence {
@@ -39,10 +61,6 @@ class MalList extends MalSequence {
 
   toString() {
     return '\"' + this.pr_str() + '\"';
-  }
-
-  isEmpty() {
-    return this.value.length == 0;
   }
 
   beginsWith(str) {
@@ -102,6 +120,10 @@ class MalNil extends MalValue {
   equal(newNil) {
     return this.value === newNil.value;
   }
+
+  first() {
+    return this.pr_str();
+  }
 }
 
 class MalBoolen extends MalValue {
@@ -156,11 +178,12 @@ const createMalString = (str) => {
 };
 
 class MalFunction extends MalValue {
-  constructor(ast, binds, env, fn) {
+  constructor(ast, binds, env, fn, isMacros = false) {
     super(ast);
     this.binds = binds;
     this.oldEnv = env;
-    this.fn = fn
+    this.fn = fn;
+    this.isMacros = isMacros
   }
 
   pr_str(print_readably = false) {

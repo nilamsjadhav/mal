@@ -82,6 +82,7 @@ const prependSymbol = (reader, symbolStr) => {
   reader.next();
   const newAst = read_form(reader);
   const symbol = new MalSymbol(symbolStr);
+  // console.log();
   return new MalList([symbol, newAst]);
 };
 
